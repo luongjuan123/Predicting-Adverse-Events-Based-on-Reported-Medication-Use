@@ -83,7 +83,7 @@ for (i in seq_along(files)) {
   # Impute missing age with Mean
   df[is.na(age_num) | age_num < 0, age_num := global_mean_age]
   
-  # Create Groups (For Linear Models)
+  # Create Groups
   df[, `x AgeGroup` := cut(age_num, breaks = age_breaks, labels = FALSE, include.lowest = TRUE)]
   
   # --- 2. FIX GENDER (PROPORTIONAL RANDOM FILL) ---
@@ -93,32 +93,39 @@ for (i in seq_along(files)) {
     default = NA_real_
   )]
   
-  # Calculate probability of being Male in this file
   prob_male <- mean(df$Gender, na.rm = TRUE)
   if(is.nan(prob_male)) prob_male <- 0.5
   
-  # Identify missing rows
   missing_idx <- which(is.na(df$Gender))
   n_missing <- length(missing_idx)
   
-  # Fill randomly respecting the ratio (Preserves distribution for NN/Lasso)
   if(n_missing > 0) {
     random_fills <- sample(c(0, 1), size = n_missing, replace = TRUE, prob = c(1 - prob_male, prob_male))
     df[missing_idx, Gender := random_fills]
   }
   
-  # --- 3. PROCESS INGREDIENTS ---
-  df[, RowID := .I]
-  df[, temp_ing := str_extract_all(`Medicines reported as being taken`, "\\((.*?)\\)")]
+  # --- 3. PROCESS INGREDIENTS (FIXED) ---
+  # Split by bullet first to handle Suspected/Not Suspected per line
+  dt_raw <- df[, .(raw_line = unlist(str_split(`Medicines reported as being taken`, "•"))), by = RowID]
+  dt_raw <- dt_raw[str_trim(raw_line) != ""]
   
-  df[, susp_val := ifelse(grepl("Suspected", `Medicines reported as being taken`, ignore.case = TRUE), 2, 1)]
+  # Check status per line (Order matters: check "Not suspected" first)
+  dt_raw[, susp_val := fcase(
+    grepl("Not suspected", raw_line, ignore.case = TRUE), 1,
+    grepl("Suspected", raw_line, ignore.case = TRUE), 2,
+    default = 1
+  )]
   
-  dt_ing <- df[, .(raw = unlist(temp_ing)), by = .(RowID, susp_val)]
-  dt_ing[, raw := gsub("[()]", "", raw)]
-  dt_ing <- dt_ing[, .(ing = str_trim(unlist(str_split(raw, "[;,/]")))), by = .(RowID, susp_val)]
-  dt_ing <- dt_ing[ing != ""]
+  # Extract content inside parens
+  dt_raw[, raw_ing := str_extract(raw_line, "\\((.*?)\\)")]
+  dt_raw[, raw_ing := gsub("[()]", "", raw_ing)]
+  
+  # Split multiple ingredients in one parenthesis (;, /)
+  dt_ing <- dt_raw[, .(ing = str_trim(unlist(str_split(raw_ing, "[;,/]")))), by = .(RowID, susp_val)]
+  dt_ing <- dt_ing[ing != "" & !is.na(ing)]
   
   if (nrow(dt_ing) > 0) {
+    # If duplicates exist (same drug listed twice), take MAX (2 overrides 1)
     matrix_ing <- dcast(dt_ing, RowID ~ ing, value.var = "susp_val", fun.aggregate = max, fill = 0)
   } else {
     matrix_ing <- data.table(RowID = df$RowID)
@@ -144,7 +151,7 @@ for (i in seq_along(files)) {
     matrix_react[, (cols_y) := lapply(.SD, \(x) as.integer(x > 0)), .SDcols = cols_y]
   }
   
-  # --- 5. MERGE (UPDATED: KEEP RAW AGE) ---
+  # --- 5. MERGE ---
   base_df <- df[, .(RowID, `x Age` = age_num, `x AgeGroup`, `x Gender` = Gender)]
   
   final <- merge(base_df, matrix_ing, by = "RowID", all = TRUE)
