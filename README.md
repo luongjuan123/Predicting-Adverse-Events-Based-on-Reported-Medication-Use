@@ -89,9 +89,15 @@ Evaluated on the held-out test cohort (evaluating over 45,000,000 patient-reacti
 | **NDCG@10** | **0.2137** | Strong ranking gain in the top 10 clinical slots |
 
 ### Evaluation Plots
-- **ROC Curves**: `evaluation_roc_curves.png`
-- **Precision-Recall Curves**: `evaluation_pr_curves.png`
-- **Training Loss Convergence**: `training_loss_curve.png`
+
+#### Training & Validation Convergence
+![Training Loss Convergence](training_loss_curve.png)
+
+#### Receiver Operating Characteristic (ROC) & Precision-Recall (PR) Curves
+<p align="center">
+  <img src="evaluation_roc_curves.png" alt="ROC Curves" width="49%" />
+  <img src="evaluation_pr_curves.png" alt="Precision-Recall Curves" width="49%" />
+</p>
 
 ---
 
