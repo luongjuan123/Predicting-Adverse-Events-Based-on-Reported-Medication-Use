@@ -9,7 +9,7 @@
 > **CSE3050 Project**  
 > **Authors**: Luong Chi Dung (`24110215@st.vju.ac.vn`) & Do Tien Dat (`24110211@st.vju.ac.vn`)  
 > **Affiliation**: Faculty of Advanced Technology and Engineering, Viet Nam Japan University (VJU)  
-> **Paper**: [Predicting Adverse Events Based on Reported Medication Use (PDF)](https://drive.google.com/file/d/18FuHV5Ys1Z6N652bXiCrweuhsNK8_WDB/view?usp=drive_link)
+> **Paper**: [Predicting Adverse Events Based on Reported Medication Use (PDF)](https://drive.google.com/file/d/1xFhzmPcdkrtLakB3eD6vLs_UPR4vKKfq/view?usp=sharing)
 
 ---
 
